@@ -68,24 +68,14 @@
 
 
 
-
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { generatePDF } from '../utils/pdfGenerator.js';
+import LoanRequest from '../models/LoanRequest.js'; // Regular import
 
 // Get current directory path
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-// Dynamic import for LoanRequest to ensure proper path resolution
-let LoanRequest;
-try {
-    const module = await import('../models/LoanRequest.js');
-    LoanRequest = module.default;
-} catch (err) {
-    console.error('Failed to import LoanRequest:', err);
-    throw err;
-}
 
 export const generateLoanPDF = async (req, res) => {
     try {
