@@ -118,14 +118,15 @@ LoanRequestSchema.virtual('loan_emi').get(function() {
     const time = this.tenure;
     
     const emi = principal * rate * Math.pow(1 + rate, time) / 
-               (Math.pow(1 + rate, time) - 1 );
+               (Math.pow(1 + rate, time) - 1);
     
     return emi.toFixed(2);
 });
 
-// ✅ Fix OverwriteModelError
-mongoose.models.LoanRequest && delete mongoose.models.LoanRequest;
+// Fix OverwriteModelError
+if (mongoose.models.LoanRequest) {
+    delete mongoose.models.LoanRequest;
+}
 
-export default mongoose.model('LoanRequest', LoanRequestSchema);
-
-
+const LoanRequest = mongoose.model('LoanRequest', LoanRequestSchema);
+export default LoanRequest;

@@ -69,77 +69,85 @@
 
 
 
-// controllers/pdfController.js
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import { generatePDF } from '../utils/pdfGenerator.js';
-import LoanRequest from '../models/LoanRequest.js';
+
+// Get current directory path
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Dynamic import for LoanRequest to ensure proper path resolution
+let LoanRequest;
+try {
+    const module = await import('../models/LoanRequest.js');
+    LoanRequest = module.default;
+} catch (err) {
+    console.error('Failed to import LoanRequest:', err);
+    throw err;
+}
 
 export const generateLoanPDF = async (req, res) => {
-  try {
-    const { loanRequestId } = req.params;
+    try {
+        const { loanRequestId } = req.params;
 
-    // Fetch loan details with all fields including virtuals
-    const loan = await LoanRequest.findById(loanRequestId)
-      .populate('userId')
-      .lean({ virtuals: true });
+        // Fetch loan details
+        const loan = await LoanRequest.findById(loanRequestId)
+            .populate('userId')
+            .lean({ virtuals: true });
 
-    if (!loan) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Loan request not found' 
-      });
+        if (!loan) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'Loan request not found' 
+            });
+        }
+
+        // Prepare PDF data
+        const pdfData = {
+            loanType: loan.loanType || 'Personal Loan',
+            amount: loan.amount || 0,
+            tenure: loan.tenure || 12,
+            interestRate: loan.interestRate || 10,
+            emi: loan.emi || loan.loan_emi || '',
+            applicantName: loan.applicantName || loan.userId?.name || '',
+            applicantEmail: loan.applicantEmail || loan.userId?.email || '',
+            applicantCNIC: loan.applicantCNIC || loan.userId?.cnic || '',
+            phoneNumber: loan.phoneNumber || loan.userId?.phone || '',
+            address: loan.address || loan.userId?.address || '',
+            city: loan.city || loan.userId?.city || '',
+            country: loan.country || loan.userId?.country || 'Pakistan',
+            userPhoto: loan.userPhoto || loan.userId?.profilePhoto || '',
+            guarantorName: loan.guarantorName || '',
+            guarantorEmail: loan.guarantorEmail || '',
+            guarantorCNIC: loan.guarantorCNIC || '',
+            guarantorLocation: loan.guarantorLocation || '',
+            tokenNumber: loan.tokenNumber || `L-${loan._id.toString().slice(-6).toUpperCase()}`,
+            status: loan.status || 'Pending',
+            appointmentDate: loan.appointmentDate || '',
+            branch: loan.branch || 'Main Branch',
+            qrCode: loan.qrCode || '',
+            createdAt: loan.createdAt || new Date()
+        };
+
+        // Generate PDF
+        const pdfBuffer = await generatePDF(pdfData);
+
+        // Set response headers
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader(
+            'Content-Disposition', 
+            `attachment; filename=loan-application-${pdfData.tokenNumber}.pdf`
+        );
+
+        // Send PDF
+        res.send(pdfBuffer);
+
+    } catch (error) {
+        console.error('PDF Generation Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to generate PDF'
+        });
     }
-
-    // Prepare complete data for PDF
-    const pdfData = {
-      // Loan details
-      loanType: loan.loanType || 'Personal Loan',
-      subcategory: loan.subcategory || '',
-      amount: loan.amount || 0,
-      maxAmount: loan.maxAmount || '',
-      tenure: loan.tenure || 12,
-      interestRate: loan.interestRate || 10,
-      emi: loan.emi || loan.loan_emi || '',
-      // Applicant details
-      applicantName: loan.applicantName || loan.userId?.name || '',
-      applicantEmail: loan.applicantEmail || loan.userId?.email || '',
-      applicantCNIC: loan.applicantCNIC || loan.userId?.cnic || '',
-      phoneNumber: loan.phoneNumber || loan.userId?.phone || '',
-      address: loan.address || loan.userId?.address || '',
-      city: loan.city || loan.userId?.city || '',
-      country: loan.country || loan.userId?.country || 'Pakistan',
-      userPhoto: loan.userPhoto || loan.userId?.profilePhoto || '',
-      // Guarantor details
-      guarantorName: loan.guarantorName || '',
-      guarantorEmail: loan.guarantorEmail || '',
-      guarantorCNIC: loan.guarantorCNIC || '',
-      guarantorLocation: loan.guarantorLocation || '',
-      // System fields
-      tokenNumber: loan.tokenNumber || `L-${loan._id.toString().slice(-6).toUpperCase()}`,
-      status: loan.status || 'Pending',
-      appointmentDate: loan.appointmentDate || '',
-      branch: loan.branch || 'Main Branch',
-      qrCode: loan.qrCode || '',
-      createdAt: loan.createdAt || new Date()
-    };
-
-    // Generate PDF
-    const pdfBuffer = await generatePDF(pdfData);
-
-    // Set response headers
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader(
-      'Content-Disposition', 
-      `attachment; filename=loan-application-${pdfData.tokenNumber}.pdf`
-    );
-
-    // Send PDF
-    res.send(pdfBuffer);
-
-  } catch (error) {
-    console.error('PDF Generation Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to generate PDF'
-    });
-  }
 };
