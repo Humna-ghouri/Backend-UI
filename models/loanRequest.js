@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const loanRequestSchema = new mongoose.Schema({
+const LoanRequestSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -100,7 +100,7 @@ const loanRequestSchema = new mongoose.Schema({
 });
 
 // Virtuals
-loanRequestSchema.virtual('formattedAppointmentDate').get(function() {
+LoanRequestSchema.virtual('formattedAppointmentDate').get(function() {
     return this.appointmentDate?.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -108,11 +108,11 @@ loanRequestSchema.virtual('formattedAppointmentDate').get(function() {
     }) || 'Not specified';
 });
 
-loanRequestSchema.virtual('formattedAppointmentTime').get(function() {
+LoanRequestSchema.virtual('formattedAppointmentTime').get(function() {
     return '10:00 AM - 3:00 PM';
 });
 
-loanRequestSchema.virtual('loan_emi').get(function() {
+LoanRequestSchema.virtual('loan_emi').get(function() {
     const principal = this.amount;
     const rate = this.interestRate / 100 / 12;
     const time = this.tenure;
@@ -126,6 +126,6 @@ loanRequestSchema.virtual('loan_emi').get(function() {
 // ✅ Fix OverwriteModelError
 mongoose.models.LoanRequest && delete mongoose.models.LoanRequest;
 
-export default mongoose.model('LoanRequest', loanRequestSchema);
+export default mongoose.model('LoanRequest', LoanRequestSchema);
 
 
