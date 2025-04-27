@@ -147,91 +147,84 @@ import connectDB from './db/db.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import morgan from 'morgan';
+import mongoose from 'mongoose';
+
+dotenv.config();
 
 // Configure __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config();
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Database connection
-connectDB();
+// Database connection and server start in sequence
+const startServer = async () => {
+  try {
+    // Wait for DB connection
+    await connectDB();
 
-// Enhanced CORS configuration
-app.use(cors({
-  origin: ['http://localhost:5173', 'https://frontend-ui-rose.vercel.app'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
-}));
+    // Enhanced CORS configuration
+    app.use(cors({
+      origin: ['http://localhost:5173', 'https://frontend-ui-rose.vercel.app'],
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
+    }));
 
-// Request logging with morgan
-app.use(morgan('dev'));
+    // Request logging with morgan
+    app.use(morgan('dev'));
 
-// Enhanced body parsing
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+    // Enhanced body parsing
+    app.use(express.json({ limit: '50mb' }));
+    app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Custom request logging middleware
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`, {
-    body: req.body,
-    headers: req.headers
-  });
-  next();
-});
-
-// Routes
-app.use('/api/auth', userRoutes);
-app.use('/api/todos', todoRoutes);
-
-// Enhanced health check endpoint
-app.get('/api/health', (req, res) => {
-  const dbStatus = mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected';
-  res.json({
-    status: 'OK',
-    dbStatus,
-    uptime: process.uptime(),
-    memoryUsage: process.memoryUsage(),
-    routes: ['/api/auth', '/api/todos']
-  });
-});
-
-// Enhanced error handling
-app.use((err, req, res, next) => {
-  console.error('🚨 Server error:', {
-    error: err.stack,
-    request: {
-      method: req.method,
-      url: req.url,
-      headers: req.headers,
-      body: req.body
-    }
-  });
-  
-  res.status(err.status || 500).json({
-    success: false,
-    error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error',
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-  });
-});
-
-// Start server with enhanced logging
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📊 MongoDB connected: ${mongoose.connection.readyState === 1 ? '✅' : '❌'}`);
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('🛑 SIGTERM received. Shutting down gracefully...');
-  server.close(() => {
-    mongoose.connection.close(false, () => {
-      console.log('🔴 MongoDB connection closed');
-      process.exit(0);
+    // Custom request logging middleware
+    app.use((req, res, next) => {
+      console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`, {
+        body: req.body,
+        headers: req.headers
+      });
+      next();
     });
-  });
-});
+
+    // Routes
+    app.use('/api/auth', userRoutes);
+    app.use('/api/todos', todoRoutes);
+
+    // Health check endpoint
+    app.get('/api/health', (req, res) => {
+      const dbStatus = mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected';
+      res.json({
+        status: 'OK',
+        dbStatus,
+        uptime: process.uptime(),
+        memoryUsage: process.memoryUsage(),
+        routes: ['/api/auth', '/api/todos']
+      });
+    });
+
+    // Start the server
+    const server = app.listen(PORT, () => {
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
+      console.log(`📊 MongoDB connected: ${mongoose.connection.readyState === 1 ? '✅' : '❌'}`);
+    });
+
+    // Graceful shutdown
+    process.on('SIGTERM', () => {
+      console.log('🛑 SIGTERM received. Shutting down gracefully...');
+      server.close(() => {
+        mongoose.connection.close(false, () => {
+          console.log('🔴 MongoDB connection closed');
+          process.exit(0);
+        });
+      });
+    });
+
+  } catch (error) {
+    console.error('🚨 Server failed to start due to DB connection error:', error.message);
+    process.exit(1);
+  }
+};
+
+startServer();

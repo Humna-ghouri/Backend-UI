@@ -133,8 +133,10 @@
 // const User = mongoose.model('User', userSchema);
 // export { User };
 
+// models/User.js
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { Todo } from './Todo.js';  // Import the Todo model
 
 const todoSubSchema = new mongoose.Schema({
   title: {
@@ -185,7 +187,7 @@ const userSchema = new mongoose.Schema({
   email: { 
     type: String, 
     required: [true, 'Email is required'],
-    unique: true,
+    unique: true,  // Unique index here
     trim: true,
     lowercase: true,
     match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please fill a valid email address']
@@ -224,8 +226,9 @@ const userSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexes for better performance
-userSchema.index({ email: 1 }, { unique: true });
+// Removed duplicate index definition for email field
+// userSchema.index({ email: 1 }, { unique: true }); // Not needed anymore
+
 userSchema.index({ 'todos.status': 1 });
 userSchema.index({ 'todos.priority': 1 });
 
@@ -275,4 +278,5 @@ userSchema.statics.logAction = function(userId, action, metadata = {}) {
 };
 
 const User = mongoose.model('User', userSchema);
+
 export { User };

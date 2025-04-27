@@ -155,55 +155,23 @@ export const updateTodo = async (req, res) => {
 };
 
 export const deleteTodo = async (req, res) => {
-    try {
-      const startTime = Date.now();
-      const { id } = req.params;
-  
-      const user = await User.findById(req.user._id);
-      if (!user) {
-        logTodoAction('delete_todo_user_not_found', req.user._id, id, { error: 'User not found' });
-        return res.status(404).json({ 
-          success: false,
-          message: 'User not found' 
-        });
-      }
-  
-      // Find the index of the todo to remove
-      const todoIndex = user.todos.findIndex(todo => todo._id.toString() === id);
-      
-      if (todoIndex === -1) {
-        logTodoAction('delete_todo_not_found', req.user._id, id, { error: 'Todo not found' });
-        return res.status(404).json({ 
-          success: false,
-          message: 'Todo not found' 
-        });
-      }
-  
-      // Remove the todo from the array
-      user.todos.splice(todoIndex, 1);
-      
-      await user.save();
-  
-      logTodoAction('delete_todo_success', req.user._id, id, {
-        duration: Date.now() - startTime
-      });
-  
-      res.json({
-        success: true,
-        message: 'Todo deleted successfully'
-      });
-    } catch (error) {
-      logTodoAction('delete_todo_error', req.user._id, req.params.id, { error: error.message });
-      res.status(500).json({ 
+  try {
+    const startTime = Date.now();
+    const { id } = req.params;
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      logTodoAction('delete_todo_user_not_found', req.user._id, id, { error: 'User not found' });
+      return res.status(404).json({ 
         success: false,
-        message: 'Failed to delete todo',
-        error: error.message 
+        message: 'User not found' 
       });
     }
-  };
-  
-  const todo = user.todos.id(id);
-    if (!todo) {
+
+    // Find the index of the todo to remove
+    const todoIndex = user.todos.findIndex(todo => todo._id.toString() === id);
+    
+    if (todoIndex === -1) {
       logTodoAction('delete_todo_not_found', req.user._id, id, { error: 'Todo not found' });
       return res.status(404).json({ 
         success: false,
@@ -211,11 +179,11 @@ export const deleteTodo = async (req, res) => {
       });
     }
 
-    todo.remove();
+    // Remove the todo from the array using splice
+    user.todos.splice(todoIndex, 1);
     await user.save();
 
     logTodoAction('delete_todo_success', req.user._id, id, {
-      title: todo.title,
       duration: Date.now() - startTime
     });
 
@@ -223,7 +191,7 @@ export const deleteTodo = async (req, res) => {
       success: true,
       message: 'Todo deleted successfully'
     });
- } catch (error) {
+  } catch (error) {
     logTodoAction('delete_todo_error', req.user._id, req.params.id, { error: error.message });
     res.status(500).json({ 
       success: false,
@@ -231,4 +199,4 @@ export const deleteTodo = async (req, res) => {
       error: error.message 
     });
   }
-}};
+};
