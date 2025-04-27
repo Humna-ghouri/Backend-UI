@@ -22,7 +22,8 @@ connectDB();
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:5173',
+//   origin: 'http://localhost:5173',
+origin: ['http://localhost:5173', 'https://frontend-ui-rose.vercel.app'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']

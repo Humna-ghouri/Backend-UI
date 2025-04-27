@@ -71,7 +71,7 @@
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { generatePDF } from '../utils/pdfGenerator.js';
-import LoanRequest from '../models/LoanRequest.js'; // Regular import
+import LoanRequest from '../models/loanRequest.js'; // Regular import
 
 // Get current directory path
 const __filename = fileURLToPath(import.meta.url);
